@@ -4,6 +4,7 @@ from utils.datasets import SQUAD_dataset
 from utils.models import BIDAF
 from utils import load_dataset, clean_dataset, tokenize
 import pickle
+import numpy as np
 
 
 def main():
@@ -18,6 +19,7 @@ def main():
 	parser.add_argument('--output_file', default = 'predictions.json', type = str, help = 'path to the output file')
 	parser.add_argument('--weights', default = 'utils/models/weights', type = str, help = 'path to the weights folder')
 	parser.add_argument('--embedding_size', default = 300, type = int)
+	parser.add_argument('--embedding_matrix', default = 'utils/data/embedding.npy', type = str, help = 'path to the embedding matrix npy file')
 	parser.add_argument('--learning_rate', default = 0.0005, type = float)
 	parser.add_argument('--filter_size', default = 3, type = int)
 	parser.add_argument('--char_embedding_size', default = 8, type = int)
@@ -42,12 +44,15 @@ def main():
 	word_tokenizer_path = os.path.join(curr, args.word_tokenizer)
 	char_tokenizer_path = os.path.join(curr, args.char_tokenizer)
 	weights_path = os.path.join(curr, args.weights)
+	embedding_matrix_path = os.path.join(curr, args.embedding_matrix)
 
 	with open(word_tokenizer_path, 'rb') as word_handle:
 		word_tokenizer = pickle.load(word_handle)
 
 	with open(char_tokenizer_path, 'rb') as char_handle:
 		char_tokenizer = pickle.load(char_handle)
+
+	embedding_matrix = np.load(embedding_matrix_path)
 
 	WORD_VOCAB_LEN = len(word_tokenizer.word_index) + 1
 	CHAR_VOCAB_LEN = char_tokenizer.num_words
@@ -57,9 +62,14 @@ def main():
 	dataset = clean_dataset(dataset, with_answer = False)
 	dataset = tokenize(dataset, word_tokenizer, char_tokenizer)
 	dataset = dataset[(dataset['tokenized_question'].str.len() <= QUESTION_MAXLEN) & (dataset['tokenized_context'].str.len() <= CONTEXT_MAXLEN)].reset_index(drop = True) 
-	print(f'we get rid of : {SAMPLES - dataset.shape[0]} samples')
+	print(f'[PREPROCESSING] we get rid of : {SAMPLES - dataset.shape[0]} samples')
 
-	dataset = SQUAD_dataset(dataset, batch_size = BATCH_SIZE, question_maxlen = QUESTION_MAXLEN, context_maxlen = CONTEXT_MAXLEN, word_maxlen = WORD_MAXLEN, with_answer = False)
+	dataset = SQUAD_dataset(dataset, 
+		batch_size = BATCH_SIZE, 
+		question_maxlen = QUESTION_MAXLEN,
+		context_maxlen = CONTEXT_MAXLEN, 
+		word_maxlen = WORD_MAXLEN, 
+		with_answer = False)
 
 	bidaf_model = BIDAF(
 		QUESTION_MAXLEN,
@@ -76,7 +86,7 @@ def main():
 		char_tokenizer_path)
 
 	bidaf_model.load_weights(weights_path)
-	bidaf_model([dataset], output_path)
+	bidaf_model.multi_predictions([dataset], output_path)
 
 if __name__ == '__main__':
 	main()
