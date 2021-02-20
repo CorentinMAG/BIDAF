@@ -1,6 +1,6 @@
 from tensorflow.keras.layers import (Embedding, Layer, Conv1D, 
     TimeDistributed, GlobalMaxPooling1D, 
-    Dense, Bidirectional, LSTM)
+    Dense, Bidirectional, LSTM, Dropout)
     
 import tensorflow as tf
 

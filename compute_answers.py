@@ -17,7 +17,7 @@ def main():
 	parser.add_argument('--word_tokenizer', default = 'utils/tokenizers/word_tokenizer.pkl', type = str, help = 'path to the word_tokenizer')
 	parser.add_argument('--char_tokenizer', default = 'utils/tokenizers/char_tokenizer.pkl', type = str, help = 'path to the char_tokenizer')
 	parser.add_argument('--output_file', default = 'predictions.json', type = str, help = 'path to the output file')
-	parser.add_argument('--weights', default = 'utils/models/weights', type = str, help = 'path to the weights folder')
+	parser.add_argument('--weights', default = 'utils/models/weights/bidaf_weights', type = str, help = 'path to the weights folder')
 	parser.add_argument('--embedding_size', default = 300, type = int)
 	parser.add_argument('--embedding_matrix', default = 'utils/data/embedding.npy', type = str, help = 'path to the embedding matrix npy file')
 	parser.add_argument('--learning_rate', default = 0.0005, type = float)
@@ -59,8 +59,13 @@ def main():
 
 	dataset = load_dataset(filepath, with_answer = False)
 	SAMPLES = dataset.shape[0]
+
+	print('[INFO] cleaning data...')
 	dataset = clean_dataset(dataset, with_answer = False)
+	print('[INFO] done !')
+	print('[INFO] tokenizing data...')
 	dataset = tokenize(dataset, word_tokenizer, char_tokenizer)
+	print('[INFO] done !')
 	dataset = dataset[(dataset['tokenized_question'].str.len() <= QUESTION_MAXLEN) & (dataset['tokenized_context'].str.len() <= CONTEXT_MAXLEN)].reset_index(drop = True) 
 	print(f'[PREPROCESSING] we get rid of : {SAMPLES - dataset.shape[0]} samples')
 
@@ -86,6 +91,7 @@ def main():
 		char_tokenizer_path)
 
 	bidaf_model.load_weights(weights_path)
+	print('[INFO] making predictions...')
 	bidaf_model.multi_predictions([dataset], output_path)
 
 if __name__ == '__main__':
