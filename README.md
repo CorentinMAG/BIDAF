@@ -11,5 +11,5 @@ you can now make predictions by using the script `compute_answer.py`
 
 
 # Results
-
+> training on the SQUADV2 dataset  
 > F1-score: 65.81 %
